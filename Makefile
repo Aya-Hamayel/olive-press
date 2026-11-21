@@ -1,11 +1,18 @@
+
 CC = gcc
-CFLAGS = -std=c11 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Wpedantic -g -fopenmp -Iinclude
+
+CFLAGS = -std=gnu11 -Wall -Wextra -Wpedantic -g -fopenmp -Iinclude
 LDFLAGS = -fopenmp -lm
+
 SRC = $(wildcard src/*.c)
+TARGET = olive
+
+all: $(TARGET)
+
+$(TARGET): $(SRC) include/common.h
+	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS)
+
+clean:
+	rm -f $(TARGET) olive.log
 
 .PHONY: all clean
-all: olive
-olive: $(SRC) include/common.h
-	$(CC) $(CFLAGS) $(SRC) -o $@ $(LDFLAGS)
-clean:
-	rm -f olive olive.log

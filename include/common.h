@@ -2,11 +2,16 @@
 #define COMMON_H
 
 #include <stddef.h>
+#include <signal.h>
 #include <sys/types.h>
 
 #define LOG_PATH_SIZE 128
 #define ALERT_TEXT_SIZE 128
 #define PIPELINE_LINKS (NUM_STAGES - 1)
+
+/* Conveyor control signals */
+#define SIG_CONVEYOR_STOP   SIGUSR1
+#define SIG_CONVEYOR_RESUME SIGUSR2
 
 typedef enum {
     RECEPTION = 0, CLEANING, WASHING, CRUSHING,
