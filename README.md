@@ -1,4 +1,4 @@
-# Olive Press Foundation
+# Olive Press Production Line Simulation
 
 Build on Ubuntu/WSL:
 
@@ -7,93 +7,46 @@ make
 ./olive config.txt
 ```
 
-`src/main.c` creates 6 stage child processes and 1 Quality Control child.
-Five ordinary pipes connect the six stages. A shared status pipe sends
-stage events to QC; an alert pipe sends QC errors to the supervisor.
-
-This is a foundation/demo only. Stage processing, simulated sensors,
-conveyor controls, OpenMP experiments and OpenGL visualization are not implemented.
+`src/main.c` creates 6 stage child processes and 1 Quality Control child. Five ordinary pipes connect the six stages. A shared status pipe sends stage events to QC; an alert pipe sends QC errors to the supervisor.
 
 Change `config.txt` and rerun without rebuilding. Press Ctrl+C to stop.
-
 
 ## Configuration Contract
 
 - `container_kg`: Initial mass of olives available in the reception container.
 - `batch_size_kg`: Mass of each batch transferred to the production line.
-- `num_batches`: Number of batches explicitly configured by the user.
 
 Current validation:
 
-    num_batches * batch_size_kg <= container_kg
+    container_kg > 0 && batch_size_kg > 0
 
-The current implementation allows leftover olives in the container.
+Reception automatically calculates and dispatches batches of size `batch_size_kg` (and a final partial batch if `container_kg` is not an exact multiple) until the container-empty sensor detects `0.00 kg` remaining.
 
-Reception currently sends the configured number of batches.
-Automatic batch calculation and the container-empty sensor are
-not implemented yet.
-
-The team must agree before changing these semantics.
-
-## Contract for Person 2
+## Stage Pipeline & Responsibilities
 
 Stage function:
 
-    run_stage(stage_id_t stage,
-              int in_fd,
-              int out_fd,
-              int status_fd,
-              const config_t *cfg);
+    run_stage(stage_id_t stage, int in_fd, int out_fd, int status_fd, const config_t *cfg);
 
 ### File descriptors
 
-- Reception: in_fd = -1, out_fd sends batches to Cleaning.
-- Cleaning, Washing, Crushing, Malaxation:
-  read from in_fd and forward batches to out_fd.
-- Pressing: reads from in_fd, out_fd = -1.
-- All stages send status_msg_t to status_fd.
-
-Use read_full() and write_full() to transfer messages
-and check their return values.
-
-### Messages
-
-- batch_msg_t: batch ID and mass in kilograms.
-- status_msg_t: stage, batch ID, temperature,
-  pressure, processing time and state.
-- alert_msg_t: alert type, stage, batch ID and text.
-
-Quality Control receives status messages and sends
-alerts to Supervisor through alert_pipe.
+- Reception: `in_fd = -1`, `out_fd` sends batches to Cleaning.
+- Cleaning, Washing, Crushing, Malaxation: read from `in_fd` and forward batches to `out_fd`.
+- Pressing: reads from `in_fd`, `out_fd = -1`.
+- All stages send `status_msg_t` to `status_fd`.
 
 ### Conveyor Signals
 
-- SIG_CONVEYOR_STOP = SIGUSR1
-- SIG_CONVEYOR_RESUME = SIGUSR2
+- `SIG_CONVEYOR_STOP = SIGUSR1`
+- `SIG_CONVEYOR_RESUME = SIGUSR2`
 
-Proposed design:
-Supervisor sends signals to the Cleaning process
-to stop or resume its conveyor.
+Implemented flow:
+1. Reception monitors the olive container level and sends `SIG_CONVEYOR_STOP` / `SIG_CONVEYOR_RESUME` to the Supervisor (`getppid()`).
+2. Supervisor catches these signals and forwards them to the Cleaning process (`children[CLEANING]`).
+3. Cleaning installs signal handlers to pause/resume conveyor intake while allowing in-flight batches already inside the downstream pipeline (`Washing` through `Pressing`) to finish processing cleanly.
 
-Signal handlers and conveyor control are not implemented yet.
-Do not send these signals before handlers are installed.
+## Current Status & Remaining Work
 
-### Important Team Rules
-
-- Do not modify common.h or message structures
-  without agreement.
-- Do not change batch semantics independently.
-- stage_time[] is parsed but stage delays are not implemented yet.
-- Coordinate changes to shared pipes and signals.
-
-## Current Limitations
-
-- Stage processing is currently a simulation stub.
-- Container-empty sensor is not implemented.
-- Conveyor pause/resume is not implemented.
-- OpenMP performance experiments are not implemented.
-- OpenGL visualization is not implemented.
-- QC currently prints messages to the terminal.
-- Supervisor logging uses olive.log.
-- The log file is opened with "w", so previous logs
-  are overwritten on each run.
+- Stage processing delays (`stage_time[]`), simulated sensor readings, container-empty detection, and conveyor signal controls are implemented.
+- OpenMP performance experiments and OpenGL visualization are not implemented yet.
+- Supervisor logging uses `olive.log`.

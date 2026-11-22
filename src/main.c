@@ -1,5 +1,6 @@
 #include "common.h"
 #include <errno.h>
+#include <math.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -10,10 +11,14 @@
 
 #define CHILD_COUNT (NUM_STAGES + 1)
 static volatile sig_atomic_t stop_requested = 0;
-
+static volatile sig_atomic_t conveyor_signal = 0;
 
 static void on_signal(int sig) {
-    if (sig != SIGCHLD) stop_requested = 1;
+    if (sig == SIG_CONVEYOR_STOP || sig == SIG_CONVEYOR_RESUME) {
+        conveyor_signal = sig;
+    } else if (sig != SIGCHLD) {
+        stop_requested = 1;
+    }
 }
 
 static int install_handlers(void) {
@@ -22,7 +27,9 @@ static int install_handlers(void) {
     sa.sa_handler = on_signal;
     if (sigaction(SIGINT, &sa, NULL) ||
         sigaction(SIGTERM, &sa, NULL) ||
-        sigaction(SIGCHLD, &sa, NULL)) return -1;
+        sigaction(SIGCHLD, &sa, NULL) ||
+        sigaction(SIG_CONVEYOR_STOP, &sa, NULL) ||
+        sigaction(SIG_CONVEYOR_RESUME, &sa, NULL)) return -1;
     return 0;
 }
 
@@ -33,6 +40,9 @@ static void child_main(int role, int pipes[PIPELINE_LINKS][2],
     sigaction(SIGINT, &default_action, NULL);
     sigaction(SIGTERM, &default_action, NULL);
     sigaction(SIGCHLD, &default_action, NULL);
+    sigaction(SIG_CONVEYOR_STOP, &default_action, NULL);
+    sigaction(SIG_CONVEYOR_RESUME, &default_action, NULL);
+
     int input = -1, output = -1, status_out = -1, alert_out = -1;
     if (role < NUM_STAGES) {
         if (role > RECEPTION) input = pipes[role - 1][0];
@@ -82,7 +92,10 @@ int main(int argc, char **argv) {
 
     pid_t children[CHILD_COUNT] = {0};
     int remaining = 0;
-    log_event("Supervisor started; %d batches", cfg.num_batches);
+    int expected_batches = (int)ceil(cfg.container_kg / cfg.batch_size_kg);
+    log_event("Supervisor started; container=%.2f kg, batch_size=%.2f kg (~%d batches)",
+              cfg.container_kg, cfg.batch_size_kg, expected_batches);
+
     for (int i = 0; i < CHILD_COUNT; ++i) {
         pid_t pid = fork();
         if (pid < 0) { perror("fork"); stop_requested = 1; break; }
@@ -100,6 +113,16 @@ int main(int argc, char **argv) {
     int failed = stop_requested ? 1 : 0;
     int terminating = 0;
     while (remaining > 0 || alert_open) {
+        if (conveyor_signal != 0) {
+            int sig = conveyor_signal;
+            conveyor_signal = 0;
+            if (children[CLEANING] > 0) {
+                kill(children[CLEANING], sig);
+                log_event("Supervisor forwarded %s to Cleaning (PID=%ld)",
+                          sig == SIG_CONVEYOR_STOP ? "SIG_CONVEYOR_STOP" : "SIG_CONVEYOR_RESUME",
+                          (long)children[CLEANING]);
+            }
+        }
         if (stop_requested && !terminating) {
             terminating = 1;
             failed = 1;
@@ -110,6 +133,9 @@ int main(int argc, char **argv) {
         pid_t pid;
         while ((pid = waitpid(-1, &st, WNOHANG)) > 0) {
             --remaining;
+            for (int i = 0; i < CHILD_COUNT; ++i) {
+                if (children[i] == pid) children[i] = 0;
+            }
             log_event("Child PID=%ld exited", (long)pid);
             if ((!WIFEXITED(st) || WEXITSTATUS(st) != 0) && !terminating) {
                 failed = 1;

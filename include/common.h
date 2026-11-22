@@ -35,7 +35,6 @@ typedef struct {
 } batch_msg_t;
 
 typedef struct {
-    int num_batches;
     float batch_size_kg;
     float container_kg;
     int stage_time[NUM_STAGES];
