@@ -65,26 +65,25 @@ int load_config(const char *path, config_t *cfg) {
         int index = -1;
         int bit = -1;
         int result = -1;
-        if (!strcmp(key,"num_batches")) {bit=0; result=parse_int(val,&tmp.num_batches);}
-        else if (!strcmp(key,"batch_size_kg")) {bit=1; result=parse_float(val,&tmp.batch_size_kg);}
-        else if (!strcmp(key,"container_kg")) {bit=2; result=parse_float(val,&tmp.container_kg);}
+        if (!strcmp(key,"batch_size_kg")) {bit=0; result=parse_float(val,&tmp.batch_size_kg);}
+        else if (!strcmp(key,"container_kg")) {bit=1; result=parse_float(val,&tmp.container_kg);}
         else if (!strcmp(key,"reception_time")) index=RECEPTION;
         else if (!strcmp(key,"cleaning_time")) index=CLEANING;
         else if (!strcmp(key,"washing_time")) index=WASHING;
         else if (!strcmp(key,"crushing_time")) index=CRUSHING;
         else if (!strcmp(key,"malaxation_time")) index=MALAXATION;
         else if (!strcmp(key,"pressing_time")) index=PRESSING;
-        else if (!strcmp(key,"temp_range")) {bit=9; result=parse_range(val,&tmp.temp_min,&tmp.temp_max);}
-        else if (!strcmp(key,"pressure_range")) {bit=10; result=parse_range(val,&tmp.press_min,&tmp.press_max);}
-        else if (!strcmp(key,"fault_probability")) {bit=11; result=parse_float(val,&tmp.fault_prob);}
+        else if (!strcmp(key,"temp_range")) {bit=8; result=parse_range(val,&tmp.temp_min,&tmp.temp_max);}
+        else if (!strcmp(key,"pressure_range")) {bit=9; result=parse_range(val,&tmp.press_min,&tmp.press_max);}
+        else if (!strcmp(key,"fault_probability")) {bit=10; result=parse_float(val,&tmp.fault_prob);}
         else if (!strcmp(key,"log_file")) {
-            bit=12;
+            bit=11;
             if (*val && strlen(val)<sizeof tmp.log_file) {
                 strcpy(tmp.log_file,val); result=0;
             }
         } else goto invalid;
         if (index >= 0) {
-            bit=3+index;
+            bit=2+index;
             result=parse_int(val,&tmp.stage_time[index]);
         }
         if (result || (seen & (1u << bit))) goto invalid;
@@ -96,9 +95,8 @@ invalid:
     }
     if (ferror(f)) { perror("read config"); fclose(f); return -1; }
     fclose(f);
-    if (seen != ((1u << 13)-1) || tmp.num_batches <= 0 ||
+    if (seen != ((1u << 12)-1) ||
         tmp.batch_size_kg <= 0 || tmp.container_kg <= 0 ||
-        (double)tmp.num_batches * tmp.batch_size_kg > tmp.container_kg + 0.0001 ||
         tmp.temp_min >= tmp.temp_max || tmp.press_min >= tmp.press_max ||
         tmp.fault_prob < 0 || tmp.fault_prob > 1) {
         fprintf(stderr,"Missing or inconsistent config values\n"); return -1;

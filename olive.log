@@ -1,0 +1,20 @@
+[2026-11-22 11:50:12] Supervisor started; container=200.00 kg, batch_size=25.00 kg (~8 batches)
+[2026-11-22 11:50:12] Created Reception PID=18064
+[2026-11-22 11:50:12] Created Cleaning PID=18065
+[2026-11-22 11:50:12] Created Washing PID=18066
+[2026-11-22 11:50:12] Created Crushing PID=18067
+[2026-11-22 11:50:12] Created Malaxation PID=18068
+[2026-11-22 11:50:12] Created Pressing PID=18069
+[2026-11-22 11:50:12] Created QC PID=18070
+[2026-11-22 11:50:12] Supervisor forwarded SIG_CONVEYOR_RESUME to Cleaning (PID=18065)
+[2026-11-22 11:50:14] Supervisor forwarded SIG_CONVEYOR_STOP to Cleaning (PID=18065)
+[2026-11-22 11:50:15] Supervisor forwarded SIG_CONVEYOR_RESUME to Cleaning (PID=18065)
+[2026-11-22 11:50:19] Supervisor forwarded SIG_CONVEYOR_STOP to Cleaning (PID=18065)
+[2026-11-22 11:50:19] Child PID=18064 exited
+[2026-11-22 11:52:06] Child PID=18065 exited
+[2026-11-22 11:52:06] Child PID=18066 exited
+[2026-11-22 11:52:06] Child PID=18067 exited
+[2026-11-22 11:52:06] Child PID=18068 exited
+[2026-11-22 11:52:06] Child PID=18069 exited
+[2026-11-22 11:52:06] Child PID=18070 exited
+[2026-11-22 11:52:06] Supervisor finished

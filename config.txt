@@ -1,5 +1,4 @@
-# Olive Press Foundation configuration
-num_batches = 8
+# Olive Press Configuration
 batch_size_kg = 25
 container_kg = 200
 reception_time = 1
