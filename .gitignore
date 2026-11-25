@@ -1,0 +1,15 @@
+# Compiled executable
+olive
+
+# Object files
+*.o
+
+# Log files
+*.log
+
+# Debugging files
+core
+core.*
+
+# Editor settings
+.vscode/
