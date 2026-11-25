@@ -2,6 +2,7 @@
 #include "common.h"
 #include <stdio.h>
 #include <string.h>
+#include "dashboard_ipc.h"
 
 /* Send an alert from Quality Control to Supervisor */
 static void send_alert(int fd, alert_type_t type,
@@ -19,7 +20,7 @@ static void send_alert(int fd, alert_type_t type,
              stage_name(msg->stage),
              msg->batch_id,
              description);
-
+            dashboard_publish_alert(&alert);
     if (write_full(fd, &alert, sizeof(alert)) != 0) {
         fprintf(stderr, "[QC] Failed to send alert\n");
     }
@@ -108,7 +109,7 @@ void run_quality(int status_fd, int alert_fd,
                        &msg, "Invalid stage ID");
             continue;
         }
-
+        dashboard_publish_status(&msg); 
         const char *state_name = "unknown";
 
         switch (msg.state) {
@@ -176,7 +177,7 @@ void run_quality(int status_fd, int alert_fd,
 
         snprintf(alert.text, sizeof(alert.text),
                  "Quality Control: truncated status message");
-
+        dashboard_publish_alert(&alert);    
         (void)write_full(alert_fd, &alert, sizeof(alert));
     }
 }

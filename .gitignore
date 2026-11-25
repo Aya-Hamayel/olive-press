@@ -13,3 +13,14 @@ core.*
 
 # Editor settings
 .vscode/
+# Build outputs
+/olive
+/graphics_app
+*.o
+
+# Runtime files
+/dashboard.fifo
+/olive.log
+
+# Temporary files
+*.tmp
