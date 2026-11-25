@@ -1,0 +1,13 @@
+# Olive Press Configuration
+batch_size_kg = 25
+container_kg = 100
+reception_time = 1
+cleaning_time = 2
+washing_time = 3
+crushing_time = 3
+malaxation_time = 5
+pressing_time = 4
+temp_range = 20,35
+pressure_range = 1,8
+fault_probability = 1.0
+log_file = olive.log
